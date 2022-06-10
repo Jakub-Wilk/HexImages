@@ -1,1 +1,2 @@
-# HexImages - HexOcean recruitment task
+HexImages - HexOcean recruitment task
+=====================================
