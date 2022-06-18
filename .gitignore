@@ -1,6 +1,6 @@
 .env*
 *.sqlite3
-mediafiles
+mediafiles*
 staticfiles
 migrations
 .vscode

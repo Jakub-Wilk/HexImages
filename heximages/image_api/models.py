@@ -15,12 +15,12 @@ import shutil
 
 def original_image_path(instance, filename):
     """Helper function to generate the path that original images should be uploaded to"""
-    return f"{instance.name}/original/{filename}"
+    return f"{instance.user.auth_user.username}/{instance.name}/original/{filename}"
 
 
 def thumbnail_path(instance, filename):
     """Helper function to generate the path that thumbnails should be uploaded to"""
-    return f"{instance.image.name}/{instance.thumbnail_height.height}/{filename}"
+    return f"{instance.image.user.auth_user.username}/{instance.image.name}/{instance.thumbnail_height.height}/{filename}"
 
 
 def resize_image_to_thumbnail(original_image, height):
@@ -30,6 +30,8 @@ def resize_image_to_thumbnail(original_image, height):
         scale = height / original_image_pil.size[1]  # calculate the scale by which the height is being resized
         new_width = round(original_image_pil.size[0] * scale)  # resize the width by the same scale
         new_image_pil = original_image_pil.resize((new_width, height))
+    else:
+        new_image_pil = original_image_pil
     if new_image_pil.mode in ("RGBA", "P"):
         new_image_pil = new_image_pil.convert("RGB")
     buffer = BytesIO()  # temporary buffer to save the image to
@@ -39,8 +41,9 @@ def resize_image_to_thumbnail(original_image, height):
 
 def create_thumbnail(image, height):
     """Create a new Thumbnail object with the specified height"""
+    thumbnail_height = ThumbnailHeight.objects.get(height=height)
     thumbnail_pil = resize_image_to_thumbnail(image.file, height)
-    new_thumbnail = Thumbnail.objects.create(thumbnail_height=ThumbnailHeight.objects.get(height=height), image=image)
+    new_thumbnail = Thumbnail.objects.create(thumbnail_height=thumbnail_height, image=image)
     new_thumbnail.file.save(os.path.basename(image.file.name), InMemoryUploadedFile(
         thumbnail_pil,
         None,
@@ -112,9 +115,11 @@ class Image(models.Model):
 
     def save(self, *args, **kwargs):
         """
-        The save function is overridden to make sure the thumbnail state is synchronized between the DB and the filesystem.
-        The state should never be desynchronized, but just in case, it is checked.
+        The save function is overridden to create thumbnails whenever the image is uploaded.
+        It also makes sure the state of the thumbnails is synchronized between the DB and the filesystem
         """
+        print("image save method runs")
+
         super().save(*args, **kwargs)
 
         existing_thumbnail_heights = map(lambda x: x.thumbnail_height, self.thumbnails.all())
@@ -124,7 +129,7 @@ class Image(models.Model):
             for thumbnail_height in correct_thumbnail_heights:
                 if thumbnail_height not in existing_thumbnail_heights:
                     create_thumbnail(self, thumbnail_height.height)
-            
+
             for thumbnail_height in existing_thumbnail_heights:
                 if thumbnail_height not in correct_thumbnail_heights:
                     self.thumbnails.get(thumbnail_height=thumbnail_height).delete()

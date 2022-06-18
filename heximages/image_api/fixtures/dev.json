@@ -1,0 +1,17 @@
+[
+  {
+    "model": "image_api.imageapiuser",
+    "pk": 1,
+    "fields": { "auth_user": 1, "tier": 3 }
+  },
+  {
+    "model": "auth.user",
+    "pk": 2,
+    "fields": { "username": "test", "password": "pbkdf2_sha256$320000$0P0dDbFLYaxy0RLiKyFX07$QIrpCqpA1jaL3VuLsbwGDoFUuFKOCbOqaBZZYOYrNfY="}
+  },
+  {
+    "model": "image_api.imageapiuser",
+    "pk": 2,
+    "fields": { "auth_user": 2, "tier": 1 }
+  }
+]
