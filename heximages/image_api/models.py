@@ -1,5 +1,6 @@
+from datetime import timedelta
 from django.contrib.auth.models import User
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.db import models
@@ -11,6 +12,8 @@ from PIL import Image as PILImage
 
 import os
 import shutil
+import random
+import string
 
 
 def original_image_path(instance, filename):
@@ -44,15 +47,20 @@ def create_thumbnail(image, height):
     thumbnail_height = ThumbnailHeight.objects.get(height=height)
     thumbnail_pil = resize_image_to_thumbnail(image.file, height)
     new_thumbnail = Thumbnail.objects.create(thumbnail_height=thumbnail_height, image=image)
-    new_thumbnail.file.save(os.path.basename(image.file.name), InMemoryUploadedFile(
+    new_thumbnail.file.save(f"{Path(image.file.name).stem}.jpg", InMemoryUploadedFile(
         thumbnail_pil,
         None,
-        os.path.basename(image.file.name),
+        f"{Path(image.file.name).stem}.jpg",
         'image/jpeg',
         thumbnail_pil.tell,
         None
     ))
     new_thumbnail.save()
+
+
+def create_random_slug():
+    """Create a random slug for temporary links"""
+    return "".join(random.choices(string.ascii_letters + string.digits, k=16))
 
 
 class ThumbnailHeight(models.Model):
@@ -118,7 +126,6 @@ class Image(models.Model):
         The save function is overridden to create thumbnails whenever the image is uploaded.
         It also makes sure the state of the thumbnails is synchronized between the DB and the filesystem
         """
-        print("image save method runs")
 
         super().save(*args, **kwargs)
 
@@ -143,6 +150,13 @@ class Thumbnail(models.Model):
 
     def __str__(self):
         return f"{self.thumbnail_height.__str__()} thumbnail of image {self.image.name}"
+
+
+class TemporaryLink(models.Model):
+    image = models.ForeignKey(Image, related_name="temporary_links", on_delete=models.CASCADE)
+    datetime_created = models.DateTimeField(auto_now_add=True)
+    duration = models.DurationField(verbose_name="duration in seconds", validators=[MinValueValidator(timedelta(seconds=300)), MaxValueValidator(timedelta(seconds=30000))])
+    slug = models.SlugField(editable=False, default=create_random_slug)
 
 
 @receiver(models.signals.post_delete, sender=Thumbnail)
