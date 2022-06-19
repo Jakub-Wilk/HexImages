@@ -29,7 +29,7 @@ services:
       - static_volume:/home/heximages/web/staticfiles
       - media_volume:/home/heximages/web/mediafiles
     ports:
-      - 8032:80
+      - 80:80
     depends_on:
       - web
 

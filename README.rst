@@ -1,2 +1,0 @@
-HexImages - HexOcean recruitment task
-=====================================
