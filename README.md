@@ -25,6 +25,8 @@ After making sure there's no other service using port 80 (if you want to use oth
 - run `docker compose -f docker-compose.prod.yml run web python manage.py loaddata initial_data.json`
 - run `docker compose -f docker-compose.prod.yml up -d`
 
+Before you start using the API you either have to set a tier for the superuser, or create a new user in the Admin UI.
+
 ## On tests
 
 I've written *some* tests to show that I can write them, but they are extremely lacking because I didn't have much time this week to work on this project. In a work environment I would of course write a complete test suite.
